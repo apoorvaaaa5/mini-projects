@@ -32,7 +32,7 @@ So the program does everything from scratch which is setting up the stack, defin
 #### Let's understand line by line:
 - `#define mmio32(x)`: This defines macro called mmio32(x).
 - `(volatile unsigned int *) x` : 
-    - We mean that x is the address of a 32 bit unsigned interger that might change to any value during compile time hence we give the word volatile. 
+    - We mean that x is the address of a 32 bit unsigned interger that might change to any value during run time hence we give the word volatile. 
     - Then we use `* (...)` to derefernce that pointer to access the value from the address i.e 32 bit unsigned integer.
 - `static void putc(char c)` : 
 ```Inside:
