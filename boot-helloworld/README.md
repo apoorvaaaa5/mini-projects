@@ -26,8 +26,7 @@ So the program does everything from scratch which is setting up the stack, defin
 
 ## Let us look into the required files:
 
-### 1. main.c 
-[main.c](https://github.com/apoorvaaaa5/mini-projects/blob/main/boot-helloworld/main.c)
+### 1. [main.c](https://github.com/apoorvaaaa5/mini-projects/blob/main/boot-helloworld/main.c)
 
 #### Let's understand line by line:
 - `#define mmio32(x)`: This defines macro called mmio32(x).
@@ -76,8 +75,7 @@ return 0;
 ```
 Ends the program and returns 0 which indicates program is successfully completed.
 
-### 2. startup.S
-[startup.S](https://github.com/apoorvaaaa5/mini-projects/blob/main/boot-helloworld/startup.S)
+### 2. [startup.S](https://github.com/apoorvaaaa5/mini-projects/blob/main/boot-helloworld/startup.S)
 
 Below is a detailed explanation of `startup.S` file and how it connects with `main.c`. Will be mostly explaining about *interrupt handling* and *entry point*
 
