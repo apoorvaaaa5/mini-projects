@@ -52,8 +52,8 @@ This is basic `puts()` function.
 It takes  a pointer to a C string `(char* rs)` — a sequence of characters ending with `\0`.
 
 It loops through each character:
-    - Sends it using putc()
-    - Moves the pointer forward (rs++)
+   - Sends it using putc()
+   - Moves the pointer forward (rs++)
 
 Stops when it hits the null terminator `(\0)`, which is how C knows the string is done.
 
