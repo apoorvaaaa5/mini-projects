@@ -22,7 +22,7 @@ So the program does everything from scratch which is setting up the stack, defin
 ## Required tools/source code
 - RISC-V Toolchain (riscv64-unknown-elf)
 - Ibex CPU core
-- [CyanCore Platform](https://github.com/VisorFolks/cyancore)
+- [CyanCore Platform](https://github.com/VisorFolks/cyancore): Cyancore is a framework that houses support for various cpu arch and platforms such that user can write an application and build it for any of supported platforms.
 
 ## Let us look into the required files:
 
