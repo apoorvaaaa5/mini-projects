@@ -39,7 +39,7 @@ So the program does everything from scratch which is setting up the stack, defin
 ```Inside:
 mmio32(0x20000) = c;
 ```
-    - This defines a private function that writes the value of character `c` into the memory-mapped register at `0x20000`.
+This defines a private function that writes the value of character `c` into the memory-mapped register at `0x20000`.
 
 -  `static void puts(char* rs)` :
 ```Inside:
@@ -49,19 +49,19 @@ while (*rs)
     rs++;
 }
 ```
-    * This is basic `puts()` function. 
-    * It takes  a pointer to a C string `(char* rs)` — a sequence of characters ending with `\0`.
-    * It loops through each character:
-        * Sends it using putc()
-        * Moves the pointer forward (rs++)
-    * Stops when it hits the null terminator `(\0)`, which is how C knows the string is done.
+  - This is basic `puts()` function. 
+  - It takes  a pointer to a C string `(char* rs)` — a sequence of characters ending with `\0`.
+  - It loops through each character:
+    * Sends it using putc()
+    * Moves the pointer forward (rs++)
+  - Stops when it hits the null terminator `(\0)`, which is how C knows the string is done.
 
 - `static void stopsim()`:
 ``` Inside:
 mmio32(0x20008) = 1;
 ```
-    * It writes 1 to address 0x20008.
-    * It signals the simulator that “the program is done” — like ending the simulation run or halting hardware.
+    - It writes 1 to address 0x20008.
+    - It signals the simulator that “the program is done” — like ending the simulation run or halting hardware.
 
 - `int main()` :
 This is entry point of C program.
@@ -79,6 +79,7 @@ Ends the program and returns 0 which indicates program is successfully completed
 
 ### 2. startup.S
 [startup.S](https://github.com/apoorvaaaa5/mini-projects/blob/main/boot-helloworld/startup.S)
+
 Below is a detailed explanation of `startup.S` file and how it connects with `main.c`. Will be mostly explaining about *interrupt handling* and *entry point*
 
 The `startup.S` file acts as the very first code that executes when RISC-V processor `powers on or resets`. It's bare-metal boot sequence-- meaning there's no OS involved to do the same. This code does two kinda important tasks:
@@ -132,9 +133,10 @@ MEMORY
 }
 ```
 This tells the linker:
-    - We have a memory region named `mem`
-    - It starts at address `0x100000` (this is the starting address of RAM for Ibex-core)
-    - The length is `0x100000` which means the size of *RAM is 1MB*
+
+  - We have a memory region named `mem`
+  - It starts at address `0x100000` (this is the starting address of RAM for Ibex-core)
+  - The length is `0x100000` which means the size of *RAM is 1MB*
 
 So, from the memory `0x100000` to `0x199999` is where all instruction code and data will reside.
 
@@ -178,19 +180,19 @@ The `"Hello World\n"` string is stored here — in memory it doesn't get modifie
 ```
 Stack is used by functions to store:
 
-    - local variables,
+  - local variables,
 
-    - return addresses,
+  - return addresses,
 
-    - and temporary data.
+  - and temporary data.
 
 Line-by-line:
 
-    - `*(.stack)` → collects anything tagged as stack (often empty)
+  - `*(.stack)` → collects anything tagged as stack (often empty)
 
-    - `. = . + 100;` → Reserves 100 bytes for the stack
+  - `. = . + 100;` → Reserves 100 bytes for the stack
 
-    - `PROVIDE(_stack_start = .);` → Tells the linker to define a label `_stack_start` at this point
+  - `PROVIDE(_stack_start = .);` → Tells the linker to define a label `_stack_start` at this point
 
 This label is used in startup.S:
 ```asm
