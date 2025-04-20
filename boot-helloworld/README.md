@@ -29,17 +29,17 @@ So the program does everything from scratch which is setting up the stack, defin
 ### 1. [main.c](https://github.com/apoorvaaaa5/mini-projects/blob/main/boot-helloworld/main.c)
 
 #### Let's understand line by line:
-- `#define mmio32(x)`: This defines macro called mmio32(x).
-- `(volatile unsigned int *) x` : 
+a) `#define mmio32(x)`: This defines macro called mmio32(x).
+b) `(volatile unsigned int *) x` : 
     - We mean that x is the address of a 32 bit unsigned interger that might change to any value during run time hence we give the word volatile. 
     - Then we use `* (...)` to derefernce that pointer to access the value from the address i.e 32 bit unsigned integer.
-- `static void putc(char c)` : Function to write individual character
+c) `static void putc(char c)` : Function to write individual character
 ```Inside:
 mmio32(0x20000) = c;
 ```
 This defines a private function that writes the value of character `c` into the memory-mapped register at `0x20000`.
 
--  `static void puts(char* rs)` : Function to write a whole string
+d)  `static void puts(char* rs)` : Function to write a whole string
 ```Inside:
 while (*rs)
 {
@@ -57,7 +57,7 @@ It loops through each character:
 
 Stops when it hits the null terminator `(\0)`, which is how C knows the string is done.
 
-- `static void stopsim()`:
+e) `static void stopsim()`:
 ``` Inside:
 mmio32(0x20008) = 1;
 ```
@@ -65,7 +65,7 @@ It writes 1 to address 0x20008.
 
 It signals the simulator that “the program is done” — like ending the simulation run or halting hardware.
 
-- `int main()` : This is entry point of C program.
+f) `int main()` : This is entry point of C program.
 
 ``` c
 puts("Hello World\n");
