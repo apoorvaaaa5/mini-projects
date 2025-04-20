@@ -22,8 +22,7 @@ So the program does everything from scratch which is setting up the stack, defin
 ## Required tools/source code
 - RISC-V Toolchain (riscv64-unknown-elf)
 - Ibex CPU core
-- Cyancore Platform: Cyancore is an open source unified software platform for embedded system projects. It  enables a developer/user to write a portable project which can run on any of the target. It is designed to be a goto framework for almost all projects, be it an Embedded applications, IoT, firmware, OS, etc. For more information click on this button. 
-[CyanCore GitHub Repository](https://github.com/VisorFolks/cyancore)
+- [CyanCore Platform](https://github.com/VisorFolks/cyancore)
 
 ## Let us look into the required files:
 
@@ -203,7 +202,7 @@ mv sp, t0
 This sets up the stack pointer so your C functions (like main) can work properly.
 
 ## Steps to run:
-Firstly, install and build [Cyancore](https://github.com/VisorFolks/cyancore/wiki/Getting-Started). Then run the below commands:
+Firstly, install and build *riscv-toolchain*. Then run the below commands:
 ```bash
 # 1. Assemble startup
 riscv64-unknown-elf-as startup.S -o startup.o -march=rv32i -mabi=ilp32
