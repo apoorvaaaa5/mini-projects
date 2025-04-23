@@ -2,7 +2,7 @@
 
 This project demonstrates how to boot a bare-metal Hello World program on a RISC-V processor, specifically using the Ibex core and the Cyancore platform.
 
-## What is "Booting on Bare Metal" mean?
+## What does "Booting on Bare Metal" mean?
 "Booting on Bare Metal" means running a program directly on the hardware — without any operating system (OS), runtime, or abstraction layers like Linux, Windows.
 
 It doesn't utilise OS to:
