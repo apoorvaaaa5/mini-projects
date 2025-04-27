@@ -1,2 +1,2 @@
 # mini-projects
-This is place I will be uploading projects as I learn!
+This is the place where I will be uploading projects as I learn!
