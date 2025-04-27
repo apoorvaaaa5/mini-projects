@@ -1,0 +1,10 @@
+out/
+tools/
+*.o
+.*.swp
+*.a
+*.elf
+*.lst
+*.tmp
+*.i
+*.d
