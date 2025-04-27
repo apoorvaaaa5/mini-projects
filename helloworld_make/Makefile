@@ -4,7 +4,7 @@ SRC		:= src
 OUT 		?= out
 PROJECT		:= Helloworld
 
-TC		:= tools/bin/riscv64-unknown-elf
+TC		:= ../tools/bin/riscv64-unknown-elf
 CC 		:= $(TC)-gcc
 AS		:= $(TC)-as	#fixed names
 LD		:= $(TC)-ld
