@@ -9,6 +9,7 @@ It doesn't utilise OS to:
 - Manage memory
 - Handle input/output
 - Schedule tasks or processes
+
 So the program does everything from scratch which is setting up the stack, defining memory, handle interrupts and performing input/output operations by reading and writing to designated memory-mapped registers(MMIO)
 
 ## Project Structure
