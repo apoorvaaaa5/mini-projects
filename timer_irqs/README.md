@@ -7,54 +7,39 @@ This project demonstrates how to implement timer-based interrupts in a bare-meta
 It means handling hardware timer interrupts without an operating system (OS). The program:
 
 - Directly configures hardware timer registers (mtime, mtimecmp)
-
 - Enables and disables machine-level interrupts using Control and Status Registers (CSRs)
-
 - Defines and handles Interrupt Service Routine (ISR) in C without an OS or interrupt manager
 
 The code fully controls:
-
 - Timer initialization
-
 - Interrupt enabling/disabling
-
 - ISR execution and acknowledgment
 
 ## Project Structure
 
-- timer_irq.elf: The compiled ELF executable for the timer interrupt demo.
+```
+timer_irq.elf          # Compiled ELF executable for the timer interrupt demo
+timer_irq.elf.lst      # Disassembly (human-readable form) of the ELF file
+startup.S              # Startup assembly: sets up stack pointer and jumps to main
+main.c                 # Main application that configures CLINT timer
+irq.c                  # Machine Timer Interrupt Service Routine (ISR)
+platform.h             # Platform abstraction header
+platform.c             # Platform-specific routines implementation
+link.ld                # Linker script: defines memory layout
+*.o                    # Object files for respective source files
+```
 
-- timer_irq.elf.lst: Disassembly (human-readable form) of the ELF file.
+## Key Files
 
-- startup.S: Startup assembly: sets up the stack pointer and jumps to main.
-
-- main.c: Main application that configures the CLINT timer and enables machine timer interrupts.
-
-- irq.c: Implements the Machine Timer Interrupt Service Routine (ISR) for handling timer interrupts.
-
-- platform.h: Platform abstraction header: provides prototypes for initialization and timer functions.
-
-- platform.c: Implements platform-specific routines like plat_mem_init, plat_cpu_init, and interrupt enabling.
-
-- link.ld: Linker script: defines memory layout and section placement.
-
-- main.o, irq.o, startup.o, platform.o: Object files for respective source files.
-
-## Let us look into the required files:
-
-1. main.c
+### 1. main.c
 
 This is the entry point of the program. It:
-
 - Disables all interrupts
-
 - Initializes memory and CPU
-
 - Starts a one-shot timer
-
 - Waits for the interrupt to set test_status
 
-```Inside:
+```c
 int test_status;
 
 int main() {
@@ -78,18 +63,15 @@ int main() {
 ```
 
 Key Points:
+- timer_one_shot(1000) schedules a timer interrupt after 1000 ticks
+- After the loop, it checks test_status. If ISR ran, test_status will be 1
 
-- timer_one_shot(1000) schedules a timer interrupt after 1000 ticks.
-
-- After the loop, it checks test_status. If ISR ran, test_status will be 1.
-
-
-2. timer.c
+### 2. timer.c
 
 Defines timer_one_shot() and timer_isr().
 
-timer_one_shot()
-```Inside:
+#### timer_one_shot()
+```c
 void timer_one_shot(unsigned int ticks) {
     unsigned long long timer;
     timer = plat_clint_timer_read();      // Read current time
@@ -100,18 +82,13 @@ void timer_one_shot(unsigned int ticks) {
 ```
 
 Steps:
+1. Read current CLINT mtime (64-bit)
+2. Add the delay (ticks) to schedule next interrupt
+3. Write to mtimecmp to trigger interrupt at that time
+4. Enable timer interrupt via CSR (mie register)
 
-1. Read current CLINT mtime (64-bit).
-
-2. Add the delay (ticks) to schedule next interrupt.
-
-3. Write to mtimecmp to trigger interrupt at that time.
-
-4. Enable timer interrupt via CSR (mie register).
-
-
-timer_isr() (Interrupt Service Routine)
-```Inside:
+#### timer_isr() (Interrupt Service Routine)
+```c
 void timer_isr() {
     extern int test_status;
     arch_di_mtime(); // Disable further timer interrupts
@@ -121,85 +98,62 @@ void timer_isr() {
 ```
 
 What happens here:
+1. Disable timer interrupts to prevent re-entry
+2. Set global test_status = 1
+3. Print a message
 
-1. Disable timer interrupts to prevent re-entry.
+### 3. platform.c / platform.h
 
-2. Set global test_status = 1.
-
-3. Print a message.
-
-
-3. platform.c / platform.h
 Handles low-level MMIO operations and basic platform services.
 
-Important Functions
+Important Functions:
+- `plat_clint_timer_read()` - Safely reads 64-bit mtime using loop to avoid overflow issue
+- `plat_clint_timer_compare()` - Writes mtimecmp (low part first, then high) to avoid early interrupts
+- `plat_ascii_out()` - Writes characters to UART output register at 0x20000
+- `plat_stop_sim()` - Writes 1 to 0x20008 to signal simulation stop
+- `plat_mem_init()` - Clears .bss section
 
-- plat_clint_timer_read() → Safely reads 64-bit mtime using loop to avoid overflow issue.
-
-- plat_clint_timer_compare() → Writes mtimecmp (low part first, then high) to avoid early interrupts.
-
-- plat_ascii_out() → Writes characters to UART output register at 0x20000.
-
-- plat_stop_sim() → Writes 1 to 0x20008 to signal simulation stop.
-
-- plat_mem_init() → Clears .bss section.
-
-
-4. arch.h
+### 4. arch.h
 
 Provides functions for interrupt control at CSR level:
-
-- arch_ei() → Enable global interrupts (mstatus.MIE)
-
-- arch_di() → Disable global interrupts
-
-- arch_ei_mtime() → Enable timer interrupt in mie
-
-- arch_di_mtime() → Disable timer interrupt
-
-- arch_wfi() → Wait For Interrupt (halts CPU until interrupt)
+- `arch_ei()` - Enable global interrupts (mstatus.MIE)
+- `arch_di()` - Disable global interrupts
+- `arch_ei_mtime()` - Enable timer interrupt in mie
+- `arch_di_mtime()` - Disable timer interrupt
+- `arch_wfi()` - Wait For Interrupt (halts CPU until interrupt)
 
 Example:
-```Inside:
+```c
 static inline void arch_ei_mtime() {
     unsigned int bits = (1 << 7); // MTIE bit
     asm volatile("csrs mie, %0" : : "r" (bits));
 }
 ```
 
-How It Works
+## How It Works
 
-1. main() calls timer_one_shot(1000).
+1. main() calls timer_one_shot(1000)
 
 2. timer_one_shot():
+   - Reads current time (mtime)
+   - Calculates next interrupt time
+   - Sets mtimecmp
+   - Enables timer interrupt
 
-- Reads current time (mtime)
+3. CPU runs main program until interrupt occurs
 
-- Calculates next interrupt time
-
-- Sets mtimecmp
-
-- Enables timer interrupt
-
-3. CPU runs main program until interrupt occurs.
-
-4. When mtime >= mtimecmp, interrupt triggers → timer_isr() executes:
-
-- Disables timer interrupt
-
-- Updates test_status
-
-- Prints ISR message
+4. When mtime >= mtimecmp, interrupt triggers and timer_isr() executes:
+   - Disables timer interrupt
+   - Updates test_status
+   - Prints ISR message
 
 5. After main loop, program checks test_status:
+   - If 1 → "Timer test success!!"
+   - Else → "Timer test failed!!"
 
-- If 1 → "Timer test success!!"
+## Flow Diagram
 
-- Else → "Timer test failed!!"
-
-
-Flow Diagram:
-
+```
 main() 
    ↓
 timer_one_shot(1000) → set mtimecmp → enable MTIE
@@ -211,9 +165,10 @@ mtime reaches mtimecmp → interrupt occurs
 timer_isr() → test_status = 1
    ↓
 main() checks status → prints result
+```
 
+## Expected Output
 
-Expected Output:
 ```
 Hello world
 
@@ -222,11 +177,10 @@ This is timer interrupttttt
 Timer test success!!
 ```
 
+## What You Will Learn
 
-What I Learned
-
-✔ How RISC-V machine timer works (mtime and mtimecmp)
-✔ How to enable and disable interrupts using CSRs
-✔ How to write an ISR in C without an OS
-✔ How to safely read 64-bit timer registers in a 32-bit system
-
+- How RISC-V machine timer works (mtime and mtimecmp)
+- How to enable and disable interrupts using CSRs
+- How to write an ISR in C without an OS
+- How to safely read 64-bit timer registers in a 32-bit system
+- Bare-metal programming concepts
