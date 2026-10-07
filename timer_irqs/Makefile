@@ -5,7 +5,7 @@ INC		:= inc
 OUT 		?= out
 PROJECT		:= Timer_IRQ
 
-TC		:= ../tools/bin/riscv64-unknown-elf
+TC		:= ../tools/risc-v-toolchain/bin/riscv64-unknown-elf
 CC 		:= $(TC)-gcc
 AS		:= $(TC)-as	#fixed names
 LD		:= $(TC)-ld
@@ -20,7 +20,8 @@ S_OBJ		:= $(addprefix $(OUT)/,$(S_OBJ))
 LDTEMPLATE	:= $(SRC)/link.ld
 F_OUT		:= $(OUT)/$(PROJECT).elf
 
-FLAG_TARGET	:= -march=rv32i -mabi=ilp32
+#FLAG_TARGET    := -march=rv32i -mabi=ilp32
+FLAG_TARGET	:= -march=rv32i_zicsr -mabi=ilp32
 FLAG_C		:= $(FLAG_TARGET) -Wall -Werror -nostdinc -nostdlib -fno-builtin -I $(INC)
 FLAG_AS		:= $(FLAG_TARGET)
 FLAG_LD		:= -dT $(LDTEMPLATE) -b elf32-littleriscv -nostdlib

@@ -11,6 +11,8 @@ vectors:
 entry:
 	la	t0, _stack_start
 	mv	sp, t0
+	la t0, vectors
+	csrw mtvec, t0
 	jal	main
 	j	.
 	
