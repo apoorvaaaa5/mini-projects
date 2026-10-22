@@ -4,7 +4,7 @@ MEMORY
     sram  (rwx) : ORIGIN = 0x20000000, LENGTH = 256K
 }
 
-ENTRY(entry)
+ENTRY(main)
 
 SECTIONS
 {

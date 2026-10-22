@@ -1,23 +1,14 @@
 .section .vectors, "a"
-.align 2
 .global vectors
 vectors:
-    .word _stack_start   /* Vector 0: Initial Stack Pointer */
-    .word entry          /* Vector 1: Reset Entry Point */
+    .word _stack_start   /* Vector 0: Initial Stack Pointer (Hardware loads SP!) */
+    .word main          /* Vector 1: Reset Handler (Jumps directly to C main!) */
     .rept 46
         .word panic_handler
     .endr
 
-.section .text.entry, "ax"
-.global entry
-.type entry, %function
-entry:
-    ldr     r0, =_stack_start
-    mov     sp, r0
-    bl      main
-    b       .
-
+.section .text.panic, "ax"
 .global panic_handler
 .type panic_handler, %function
 panic_handler:
-    b       .
+    b   .
