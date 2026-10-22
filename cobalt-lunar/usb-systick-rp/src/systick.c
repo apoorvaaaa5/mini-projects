@@ -36,6 +36,7 @@ void systick_init(void (*cb_func)(void))
 
 	/* 4. Enable counter and select processor clock (IRQ disabled until reload) */
 	mmio32(SYST_CSR) = SYST_CSR_ENABLE;
+	//// Set this to 1mhz clock.
 }
 
 static void systick_enable_irq(void)

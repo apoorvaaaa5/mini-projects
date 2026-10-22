@@ -123,19 +123,19 @@ const uint8_t usb_string_lang[] = {
 };
 const uint32_t usb_string_lang_len = sizeof(usb_string_lang);
 
-/* String Descriptor 1: Manufacturer "Raspberry Pi" */
+/* String Descriptor 1: Manufacturer "Appu" */
 const uint8_t usb_string_mfr[] = {
-	26,
+	10,
 	USB_DESC_TYPE_STRING,
-	'R', 0, 'a', 0, 's', 0, 'p', 0, 'b', 0, 'e', 0, 'r', 0, 'r', 0, 'y', 0, ' ', 0, 'P', 0, 'i', 0
+	'A', 0, 'p', 0, 'p', 0, 'u', 0
 };
 const uint32_t usb_string_mfr_len = sizeof(usb_string_mfr);
 
-/* String Descriptor 2: Product "RP2040 CDC Serial" */
+/* String Descriptor 2: Product "RPI Pico" */
 const uint8_t usb_string_prod[] = {
-	36,
+	18,
 	USB_DESC_TYPE_STRING,
-	'R', 0, 'P', 0, '2', 0, '0', 0, '4', 0, '0', 0, ' ', 0, 'C', 0, 'D', 0, 'C', 0, ' ', 0, 'S', 0, 'e', 0, 'r', 0, 'i', 0, 'a', 0, 'l', 0
+	'R', 0, 'P', 0, 'I', 0, ' ', 0, 'P', 0, 'i', 0, 'c', 0, 'o', 0
 };
 const uint32_t usb_string_prod_len = sizeof(usb_string_prod);
 
