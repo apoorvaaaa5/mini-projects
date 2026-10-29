@@ -9,3 +9,6 @@ tools/
 *.i
 *.d
 *.uf2
+build/
+*.bin
+doc/
