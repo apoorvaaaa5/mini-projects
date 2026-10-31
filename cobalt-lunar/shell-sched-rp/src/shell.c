@@ -224,8 +224,18 @@ static void cmd_kill(const char *arg)
 		return;
 	}
 
+	/* Copy argument to local buffer and trim trailing whitespace */
+	char name_buf[32];
+	strncpy(name_buf, arg, sizeof(name_buf) - 1);
+	name_buf[sizeof(name_buf) - 1] = '\0';
+
+	int len = strlen(name_buf);
+	while (len > 0 && (name_buf[len - 1] == ' ' || name_buf[len - 1] == '\t')) {
+		name_buf[--len] = '\0';
+	}
+
 	/* Prevent root shell suicide */
-	if (strcmp(arg, "shell") == 0 || strcmp(arg, "0") == 0) {
+	if (strcmp(name_buf, "shell") == 0 || strcmp(name_buf, "0") == 0) {
 		console_puts("[ERROR] Cannot kill root system shell task!\r\n");
 		return;
 	}
@@ -233,7 +243,7 @@ static void cmd_kill(const char *arg)
 	/* Search for active task by App Name */
 	int target_slot = -1;
 	for (int i = 1; i < MAX_TASKS; i++) {
-		if (strcmp(task[i].name, arg) == 0 && task[i].state != t_quit && task[i].name[0] != '\0') {
+		if (strcmp(task[i].name, name_buf) == 0 && task[i].state != t_quit && task[i].name[0] != '\0') {
 			target_slot = i;
 			break;
 		}
@@ -241,13 +251,13 @@ static void cmd_kill(const char *arg)
 
 	if (target_slot == -1) {
 		console_puts("[ERROR] Task '");
-		console_puts(arg);
+		console_puts(name_buf);
 		console_puts("' is not currently running!\r\n");
 		return;
 	}
 
 	/* Hardware peripheral cleanup: Turn off PWM if breathe task is killed */
-	if (strcmp(arg, "breathe") == 0) {
+	if (strcmp(name_buf, "breathe") == 0) {
 		pwm_set(0);
 	}
 
@@ -255,7 +265,7 @@ static void cmd_kill(const char *arg)
 	task_kill(target_slot);
 
 	console_puts("[OK] Terminated task '");
-	console_puts(arg);
+	console_puts(name_buf);
 	console_puts("' (PID ");
 	print_uint(killed_pid);
 	console_puts(").\r\n");
