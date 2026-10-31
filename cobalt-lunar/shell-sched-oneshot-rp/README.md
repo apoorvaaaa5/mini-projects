@@ -59,10 +59,22 @@ make
 ```
 Produces `build/SHELL_SCHED_ONESHOT_RP2040.uf2`.
 
-### 2. Flash & Connect
+### 2. Flash to RP2040
+
+#### Method A: Direct Automated Flash (via picotool)
+```bash
+make flash
+```
+
+#### Method B: Manual BOOTSEL Mount
+Hold the **BOOTSEL** button on the Raspberry Pi Pico while plugging it into the USB port, then copy the binary:
 ```bash
 cp build/SHELL_SCHED_ONESHOT_RP2040.uf2 /media/$USER/RPI-RP2/
+```
 
-# Connect terminal:
+### 3. Connect via Serial Terminal (GNU screen)
+```bash
 screen /dev/ttyACM0 115200
+
+# To exit screen: Press Ctrl+A, then \, then y
 ```

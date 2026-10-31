@@ -44,8 +44,15 @@ make
 ```
 Produces `build/BLINKY_CLOCK_RP2040.uf2`.
 
-### 2. Flash
-Hold **BOOTSEL** while plugging the Pico in, then copy:
+### 2. Flash to RP2040
+
+#### Method A: Direct Automated Flash (via picotool)
+```bash
+make flash
+```
+
+#### Method B: Manual BOOTSEL Mount
+Hold the **BOOTSEL** button on the Raspberry Pi Pico while plugging it into the USB port, then copy the binary:
 ```bash
 cp build/BLINKY_CLOCK_RP2040.uf2 /media/$USER/RPI-RP2/
 ```

@@ -79,14 +79,20 @@ make
 Generates the UF2 binary in `build/SHELL_SCHED_INTERACTIVE_LIVE_TASK_RP2040.uf2`.
 
 ### 2. Flash to RP2040
-Hold the **BOOTSEL** button on the Raspberry Pi Pico while plugging it in via USB, then copy the binary:
+
+#### Method A: Direct Automated Flash (via picotool)
+```bash
+make flash
+```
+
+#### Method B: Manual BOOTSEL Mount
+Hold the **BOOTSEL** button on the Raspberry Pi Pico while plugging it into the USB port, then copy the binary:
 ```bash
 cp build/SHELL_SCHED_INTERACTIVE_LIVE_TASK_RP2040.uf2 /media/$USER/RPI-RP2/
 ```
 
-### 3. Connect via Serial Terminal
+### 3. Connect via Serial Terminal (GNU screen)
 ```bash
-# Using GNU screen (115200 baud):
 screen /dev/ttyACM0 115200
 
 # To exit screen: Press Ctrl+A, then \, then y
