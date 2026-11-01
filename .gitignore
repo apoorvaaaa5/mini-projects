@@ -12,3 +12,4 @@ tools/
 build/
 *.bin
 doc/
+TASK_HELLO_PATCH_AND_SOLUTIONS.md
