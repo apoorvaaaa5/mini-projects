@@ -123,11 +123,11 @@ const uint8_t usb_string_lang[] = {
 };
 const uint32_t usb_string_lang_len = sizeof(usb_string_lang);
 
-/* String Descriptor 1: Manufacturer "Appu" */
+/* String Descriptor 1: Manufacturer "Praxis" */
 const uint8_t usb_string_mfr[] = {
-	10,
+	14,
 	USB_DESC_TYPE_STRING,
-	'A', 0, 'p', 0, 'p', 0, 'u', 0
+	'P', 0, 'r', 0, 'a', 0, 'x', 0, 'i', 0, 's', 0
 };
 const uint32_t usb_string_mfr_len = sizeof(usb_string_mfr);
 
