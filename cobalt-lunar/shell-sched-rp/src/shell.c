@@ -321,11 +321,9 @@ void shell_task(void)
 
 		if (!welcomed) {
 			welcomed = 1;
-			console_puts("\r\n========================================\r\n");
-			console_puts("  Welcome to Appu's Pico Bare-Metal OS   \r\n");
-			console_puts("========================================\r\n");
+			console_puts("\r\n>>> CONNECTED TO STRATAHALO OS <<<\r\n");
 			console_puts("Type 'help' or 'ls' to see applications.\r\n\r\n");
-			console_puts("appu_os> ");
+			console_puts("halo> ");
 			len = 0;
 		}
 
@@ -334,7 +332,7 @@ void shell_task(void)
 			tcb *fg = task_get_by_pid(foreground_pid);
 			if (!fg || fg->state == t_quit || fg->name[0] == '\0') {
 				foreground_pid = 0;
-				console_puts("appu_os> ");
+				console_puts("halo> ");
 				len = 0;
 			}
 		}
@@ -369,10 +367,10 @@ void shell_task(void)
 					task_kill(fg->slot_id);
 				}
 				foreground_pid = 0;
-				console_puts("appu_os> ");
+				console_puts("halo> ");
 				len = 0;
 			} else {
-				console_puts("^C\r\nappu_os> ");
+				console_puts("^C\r\nhalo> ");
 				len = 0;
 			}
 			continue;
@@ -389,7 +387,7 @@ void shell_task(void)
 			line[len] = '\0';
 			execute_command(line);
 			if (foreground_pid == 0) {
-				console_puts("appu_os> ");
+				console_puts("halo> ");
 			}
 			len = 0;
 		} else if (ch == '\b' || ch == 0x7F) {

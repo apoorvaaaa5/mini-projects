@@ -1,4 +1,4 @@
-# System Features Specification — Appu OS (RP2040)
+# System Features Specification — StrataHalo OS (RP2040)
 
 Detailed technical specification of the multitasking architecture, execution models, and shell features implemented in `shell-sched-interactive-live-task-rp`.
 
@@ -39,7 +39,7 @@ Detailed technical specification of the multitasking architecture, execution mod
   * Emits ANSI relative controls: `\r` (carriage return), `\033[K` (clear line), and `\033[1A` (cursor UP 1 line).
   * Avoids fixed screen row assumptions and hardware scroll margins (`DECSTBM`).
 * **Active Input Buffer Preservation:**
-  * When background tasks tick, the telemetry line updates in place directly above the command prompt (`appu_os>`).
+  * When background tasks tick, the telemetry line updates in place directly above the command prompt (`halo>`).
   * The current user input buffer is re-emitted with the hardware cursor kept at the end of typed characters.
 * **Multi-Task Telemetry Synthesis:**
   * Combines outputs of multiple active background tasks on a single status line.

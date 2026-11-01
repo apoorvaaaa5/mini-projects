@@ -60,7 +60,7 @@ void shell_prompt(void)
 	} else {
 		bg_telemetry_rendered = 0;
 	}
-	console_puts("appu_os> ");
+	console_puts("halo> ");
 }
 
 void shell_update_bg_telemetry(char spinner, uint32_t ticks)
@@ -94,7 +94,7 @@ void shell_update_bg_telemetry(char spinner, uint32_t ticks)
 	console_puts("\r\n");
 
 	/* Re-render prompt and restore user input buffer */
-	console_puts("appu_os> ");
+	console_puts("halo> ");
 	for (uint32_t i = 0; i < shell_len; i++) {
 		console_putc(shell_line[i]);
 	}
@@ -458,9 +458,7 @@ void shell_task(void)
 
 		if (!welcomed) {
 			welcomed = 1;
-			console_puts("\r\n========================================\r\n");
-			console_puts("  Welcome to Appu's Pico Bare-Metal OS   \r\n");
-			console_puts("========================================\r\n");
+			console_puts("\r\n>>> CONNECTED TO STRATAHALO OS <<<\r\n");
 			console_puts("Type 'help' or 'ls' to see applications.\r\n\r\n");
 			shell_len = 0;
 			shell_prompt();

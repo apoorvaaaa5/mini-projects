@@ -8,7 +8,7 @@ A bare-metal preemptive multitasking operating system featuring a dynamic tiling
 
 ### 1. Dynamic Tiling Multi-Pane Window Manager
 - **Zero Background Tasks (Full-Screen Shell):**
-  - Full-width interactive shell prompt (`appu_os> █`) across the entire terminal width (columns 1 to 80).
+  - Full-width interactive shell prompt (`halo> █`) across the entire terminal width.
 - **One Background Task (Vertical 50/50 Split):**
   - **Left Pane (Columns 1–39):** Active interactive shell with automatic line wrapping at column 38.
   - **Vertical Divider (Column 40):** Pinned boundary line (`|`).
@@ -104,28 +104,28 @@ screen /dev/ttyACM0 115200
 
 1. **Boot into Full Screen:**
    ```text
-   appu_os> help
-   appu_os> ls
+   halo> help
+   halo> ls
    ```
 2. **Trigger Vertical Split (1 Background Task):**
    ```text
-   appu_os> run breathe
+   halo> run breathe
    ```
    * The vertical divider (`|`) appears at column 40.
    * Right pane displays live PWM duty cycle bargraph and carrier frequency.
 3. **Trigger Dual Horizontal Split on Right Half (2 Background Tasks):**
    ```text
-   appu_os> run display &
+   halo> run display &
    ```
    * Right half splits horizontally: Top-Right runs `breathe`, Bottom-Right runs `display`.
 4. **Test Left-Pane Line Wrapping:**
    * Type a long line (e.g. `run breathe hello display ...`). Notice it wraps cleanly at column 38 without crossing the vertical divider!
 5. **Test Dynamic Collapse:**
    ```text
-   appu_os> kill breathe
+   halo> kill breathe
    ```
    * Right half collapses back to a single pane for `display`.
    ```text
-   appu_os> kill all
+   halo> kill all
    ```
    * Right half and dividers disappear, restoring full-screen shell.

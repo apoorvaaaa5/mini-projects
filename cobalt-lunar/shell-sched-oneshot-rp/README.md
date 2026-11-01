@@ -20,7 +20,7 @@ A preemptive multitasking shell supporting continuous tasks, one-shot ephemeral 
   - `ps` — Displays active tasks, states, runtime modes, stack pointers, and telemetry.
   - `kill <app1> [app2...] | kill all` — Multi-target process termination with safety guard against killing root PID 0 (`shell`).
 - **Signal Handling & Interrupts:**
-  - `Ctrl+C` (ASCII `0x03`) cleanly terminates active foreground tasks and restores the `appu_os>` prompt.
+  - `Ctrl+C` (ASCII `0x03`) cleanly terminates active foreground tasks and restores the `halo>` prompt.
 - **Hardware Integration:**
   - Integrated 2 kHz hardware PWM LED breathing on GPIO 25.
   - Full-duplex bare-metal USB CDC serial communication.

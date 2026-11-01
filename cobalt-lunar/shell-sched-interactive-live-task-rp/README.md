@@ -20,7 +20,7 @@ A bare-metal preemptive multitasking operating system and interactive shell for 
   - `kill <app1> [app2...] | kill all` — Multi-target process termination with root shell protection (`kill shell` / `kill 0` safety guard).
 
 ### 3. Relative In-Line Live Background Telemetry
-- **Non-Intrusive Telemetry:** Background tasks continuously update their live state (spinner, monotonic ticks, PWM frequency) on a dedicated line directly above the active command prompt (`appu_os>`).
+- **Non-Intrusive Telemetry:** Background tasks continuously update their live state (spinner, monotonic ticks, PWM frequency) on a dedicated line directly above the active command prompt (`halo>`).
 - **Relative In-Line Redrawing:** Uses pure relative cursor repositioning (`\r`, `\033[K`, `\033[1A`) rather than hardcoded screen rows or scroll margins (`DECSTBM`).
 - **Typing Preservation:** Re-emits active user keystrokes in place, keeping the hardware cursor locked at the end of the input buffer without flicker or stranding.
 - **Dynamic Adaptation:** Automatically combines multi-task telemetry lines and cleanly removes the telemetry line when background tasks terminate.

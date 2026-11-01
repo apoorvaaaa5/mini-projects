@@ -7,7 +7,7 @@ An interactive bare-metal operating system shell integrated with a preemptive ro
 ## 🌟 Overview & Key Concepts
 
 - **Interactive System Shell (`shell`):**
-  - Runs as the root interactive task (PID 0) providing a command prompt (`appu_os>`).
+  - Runs as the root interactive task (PID 0) providing a command prompt (`halo>`).
   - Supports line editing (printable ASCII characters, backspace, carriage return).
   - Built-in commands: `help`, `ls`, `run <app> [&]`, `ps`, `kill <app>`.
 - **Preemptive Round-Robin Engine:**
