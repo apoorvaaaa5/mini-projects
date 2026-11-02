@@ -21,7 +21,7 @@ void mdelay(uint32_t ms)
 	while (counter > 0)
 	{
 		usb_poll();
-		asm volatile("wfi");
+		arch_wfi();
 	}
 }
 
