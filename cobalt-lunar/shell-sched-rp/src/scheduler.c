@@ -14,7 +14,7 @@
 #define SYST_CSR_CLKSOURCE  (1 << 2)    /* 1 = clk_sys (125 MHz), 0 = 1 MHz ref */
 
 /* Variables from user template */
-uint8_t R = 0, currentTaskId = 0, nextTaskId = 0, num_tasks = 0;
+uint8_t currentTaskId = 0, nextTaskId = 0, num_tasks = 0;
 tcb task[MAX_TASKS];
 
 /* Internal static stack pool managed completely by scheduler */
@@ -30,7 +30,7 @@ static void task_exit_guard(void)
 	/* Auto-reap task when its function finishes and returns */
 	task_kill(currentTaskId);
 	while (1) {
-		asm volatile("wfi");
+		arch_wfi();
 	}
 }
 
@@ -98,7 +98,6 @@ int task_create_named(const char *name, void (*entry)(void), task_mode_t mode)
 	task[id].slot_id = id;
 	task[id].pid = assigned_pid;
 	task[id].fnctpt = entry;
-	task[id].priority = 0;
 	task[id].mode = mode;
 
 	if (name) {
@@ -126,11 +125,6 @@ int task_create_named(const char *name, void (*entry)(void), task_mode_t mode)
 	arch_ei();
 
 	return (int)assigned_pid;
-}
-
-int task_create(void (*entry)(void))
-{
-	return task_create_named("task", entry, MODE_BACKGROUND);
 }
 
 tcb *task_get_by_pid(uint32_t pid)
@@ -163,19 +157,6 @@ int task_kill(uint8_t slot_id)
 	arch_ei();
 
 	return 0;
-}
-
-int task_kill_by_name(const char *name)
-{
-	if (!name || strcmp(name, "shell") == 0) {
-		return -1;
-	}
-	for (int i = 1; i < MAX_TASKS; i++) {
-		if (strcmp(task[i].name, name) == 0 && task[i].state != t_quit) {
-			return task_kill(i);
-		}
-	}
-	return -1;
 }
 
 void timer_init(void)

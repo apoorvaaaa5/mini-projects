@@ -50,9 +50,3 @@ int console_getc(void)
 	}
 	return -1; /* No character available */
 }
-
-int console_has_char(void)
-{
-	usb_poll();
-	return 0; /* Handled directly by console_getc returning -1 when empty */
-}

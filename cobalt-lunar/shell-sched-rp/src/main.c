@@ -64,14 +64,6 @@ void task_display(void)
 	}
 }
 
-/*
- * This task will not have a while loop
- * It will simply exit after printing
- */
-void task_hello(void)
-{
-	console_puts("Hello World!\n");
-}
 
 int main(void)
 {
@@ -94,7 +86,7 @@ int main(void)
 
 	/* Unreachable */
 	while (1) {
-		asm volatile("wfi");
+		arch_wfi();
 	}
 
 	return 0;
