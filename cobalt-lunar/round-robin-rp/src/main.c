@@ -76,6 +76,9 @@ int main(void)
 	/* 5. Start the round-robin scheduler */
 	scheduler_start();
 
-	while (1);
+	/* Unreachable */
+	while (1) {
+		arch_wfi();
+	}
 	return 0;
 }

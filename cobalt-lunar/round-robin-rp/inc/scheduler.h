@@ -19,7 +19,6 @@ typedef struct TaskControlBlock {
 	uint32_t stack_pointer_end;	/* Current saved stack pointer (1st field for assembly) */
 	uint8_t task_id;
 	status state;
-	uint8_t priority;
 	uint32_t stack_pointer_begin;
 	void (*fnctpt)(void);
 } tcb;

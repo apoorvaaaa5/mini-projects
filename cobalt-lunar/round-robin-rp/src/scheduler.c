@@ -25,7 +25,7 @@ static void task_exit_guard(void)
 {
 	/* Safety loop if a task ever exits */
 	while (1) {
-		asm volatile("wfi");
+		arch_wfi();
 	}
 }
 
@@ -64,7 +64,6 @@ int task_create(void (*entry)(void))
 
 	task[id].task_id = id;
 	task[id].fnctpt = entry;
-	task[id].priority = 0;
 	task[id].state = t_ready;
 
 	/* Internally manage stack allocation from private static pool */
