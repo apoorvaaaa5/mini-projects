@@ -82,12 +82,6 @@ int console_getc(void)
 	return (int)ch;
 }
 
-int console_has_char(void)
-{
-	usb_poll();
-	return 0;
-}
-
 /* Simple atomic lock for serial TX to prevent interleaving */
 static volatile int tx_lock = 0;
 
