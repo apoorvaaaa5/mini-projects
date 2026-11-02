@@ -30,7 +30,6 @@ static int display_base_row = 0;
 
 void console_lock(void)   { tx_lock = 1; }
 void console_unlock(void) { tx_lock = 0; }
-int  console_is_locked(void) { return tx_lock; }
 
 int console_split_is_active(void)
 {
@@ -253,6 +252,10 @@ void console_putc(char c)
 void console_puts(const char *str)
 {
 	if (!str) return;
+	if (!split_active) {
+		console_write(str, strlen(str));
+		return;
+	}
 	while (*str) {
 		console_putc(*str++);
 	}
@@ -285,12 +288,6 @@ int console_getc(void)
 	}
 
 	return (int)ch;
-}
-
-int console_has_char(void)
-{
-	usb_poll();
-	return 0;
 }
 
 static void raw_puts(const char *str)
@@ -491,8 +488,8 @@ void console_split_activate(void)
 
 	/* Footer bar at bottom */
 	console_goto_rc(term_rows, 1);
-	console_write("\033[90mType 'help' | 'ls' | 'run <app> [&]' | 'ps' | 'kill <app>' | 'resize' | 'clear'\033[0m", 85);
-	for (int c = 77; c < term_cols; c++) console_write(" ", 1);
+	console_write("\033[90mType 'help' | 'ls' | 'run <app> [&]' | 'ps' | 'kill <app>' | 'clear'\033[0m", 74);
+	for (int c = 66; c < term_cols; c++) console_write(" ", 1);
 
 	clear_right_pane();
 	console_unlock();
@@ -501,12 +498,6 @@ void console_split_activate(void)
 
 	console_goto_rc(TOP_ROW + cur_row, 1 + cur_col);
 	console_write("\033[?25h", 6);
-}
-
-void console_split_resize(void)
-{
-	if (!split_active) return;
-	console_split_activate();
 }
 
 void console_split_deactivate(void)

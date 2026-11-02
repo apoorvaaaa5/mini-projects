@@ -12,19 +12,11 @@ extern void task_hello(void);
 extern uint32_t display_get_tick(void);
 extern char display_get_spinner(void);
 
-typedef struct {
-	const char *name;
-	void (*entry)(void);
-	uint8_t bg;
-	uint8_t is_oneshot;
-	const char *description;
-} split_app_reg_t;
-
-/* Original Application Registry Table */
-static const split_app_reg_t app_registry[] = {
-	{ "breathe", task_breathe_led, 1, 0, "Hardware PWM breathing LED on GPIO 25" },
-	{ "display", task_display,     0, 0, "Interactive counter display (Ctrl+C to stop)" },
-	{ "hello",   task_hello,       0, 1, "One-shot Hello World task (runs once and exits)" },
+/* Application Registry Table */
+static const app_reg_t app_registry[] = {
+	{ "breathe", task_breathe_led, 1, "Hardware PWM breathing LED on GPIO 25" },
+	{ "display", task_display,     0, "Interactive counter display (Ctrl+C to stop)" },
+	{ "hello",   task_hello,       0, "One-shot Hello World task (runs once and exits)" },
 };
 #define NUM_APPS  (sizeof(app_registry) / sizeof(app_registry[0]))
 
@@ -105,7 +97,6 @@ static void cmd_help(void)
 	console_puts("  run <app> [&]- Run an app (& forces background execution)\r\n");
 	console_puts("  ps          - List active tasks, states, modes, stack pointers & telemetry\r\n");
 	console_puts("  kill <app..>- Terminate task(s) by name, or 'kill all'\r\n");
-	console_puts("  resize      - Re-detect terminal dimensions and adapt canvas\r\n");
 	console_puts("  clear       - Clear the screen\r\n");
 }
 
@@ -205,7 +196,7 @@ static void cmd_run(const char *arg)
 		}
 	}
 
-	const split_app_reg_t *app = 0;
+	const app_reg_t *app = 0;
 	for (uint32_t i = 0; i < NUM_APPS; i++) {
 		if (strcmp(name_buf, app_registry[i].name) == 0) {
 			app = &app_registry[i];
@@ -242,7 +233,7 @@ static void cmd_run(const char *arg)
 	}
 
 	if (is_bg) {
-		if (!app->is_oneshot) {
+		if (app->bg) {
 			if (!console_split_is_active()) {
 				console_split_activate();
 			} else {
@@ -262,11 +253,7 @@ static void cmd_run(const char *arg)
 		foreground_pid = (uint32_t)pid;
 		console_puts("[RUN] Running '");
 		console_puts(app->name);
-		if (app->is_oneshot) {
-			console_puts("'...\r\n");
-		} else {
-			console_puts("' in foreground. Press Ctrl+C to stop...\r\n");
-		}
+		console_puts("' in foreground. Press Ctrl+C to stop...\r\n");
 	}
 }
 
@@ -383,8 +370,6 @@ static void execute_command(char *cmd_line)
 		cmd_ps();
 	} else if (strcmp(cmd_line, "kill") == 0) {
 		cmd_kill(arg);
-	} else if (strcmp(cmd_line, "resize") == 0) {
-		console_split_resize();
 	} else if (strcmp(cmd_line, "clear") == 0) {
 		console_split_clear_left();
 	} else {
@@ -413,7 +398,10 @@ void shell_task(void)
 
 		if (!welcomed) {
 			welcomed = 1;
-			console_split_deactivate();
+			if (console_split_is_active()) {
+				console_split_deactivate();
+			}
+			mdelay(25); /* Allow host terminal software to finish DTR/baud configuration */
 			console_puts("\r\n>>> CONNECTED TO STRATAHALO OS <<<\r\n");
 			console_puts("Type 'help' or 'ls' to see applications.\r\n\r\n");
 			shell_len = 0;

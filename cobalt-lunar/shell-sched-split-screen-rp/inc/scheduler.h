@@ -5,7 +5,6 @@
 
 #define MAX_APPS          3     /* breathe, display, hello */
 #define MAX_TASKS         (MAX_APPS + 1) /* Slot 0 (shell) + 3 app slots = 4 slots */
-#define maxTask           MAX_TASKS
 #define STACK_SIZE_WORDS  256   /* 256 * 4 = 1024 bytes per task */
 
 /* Task state enumeration */
@@ -29,7 +28,6 @@ typedef struct TaskControlBlock {
 	uint8_t slot_id;            /* Physical slot index (0 .. MAX_TASKS-1) */
 	uint32_t pid;               /* 32-bit monotonic process ID (1, 2, 3...) */
 	status state;
-	uint8_t priority;
 	uint32_t stack_pointer_begin;
 	void (*fnctpt)(void);
 	char name[16];
@@ -37,15 +35,13 @@ typedef struct TaskControlBlock {
 } tcb;
 
 extern tcb task[MAX_TASKS];
-extern uint8_t R, currentTaskId, nextTaskId, num_tasks;
+extern uint8_t currentTaskId, nextTaskId, num_tasks;
 extern volatile uint32_t system_millis;
 
 /* Scheduler APIs */
 void timer_init(void);
-int  task_create(void (*entry)(void));
 int  task_create_named(const char *name, void (*entry)(void), task_mode_t mode);
 int  task_kill(uint8_t slot_id);
-int  task_kill_by_name(const char *name);
 tcb *task_get_by_pid(uint32_t pid);
 void scheduler_start(void);
 void start_first_task(uint32_t stack_top, void (*entry)(void));

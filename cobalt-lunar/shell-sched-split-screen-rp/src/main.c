@@ -127,7 +127,7 @@ int main(void)
 
 	/* Unreachable */
 	while (1) {
-		asm volatile("wfi");
+		arch_wfi();
 	}
 
 	return 0;
