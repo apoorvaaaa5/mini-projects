@@ -3,6 +3,7 @@
 #include <console.h>
 #include <pwm.h>
 #include <arch.h>
+#include <systick.h>
 #include <scheduler.h>
 #include <shell.h>
 
@@ -88,7 +89,7 @@ int main(void)
 	arch_di();	// cli();
 
 	/* 3. Initialize SysTick timer (1 ms periodic quantum) */
-	timer_init();
+	systick_init();
 
 	/* 4. Create primary interactive Shell Task (PID 0) */
 	task_create_named("shell", shell_task, MODE_SYSTEM);
@@ -98,7 +99,7 @@ int main(void)
 
 	/* Unreachable */
 	while (1) {
-		asm volatile("wfi");
+		arch_wfi();
 	}
 
 	return 0;

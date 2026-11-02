@@ -11,9 +11,9 @@ extern void task_hello(void);
 
 /* Application Registry Table */
 static const app_reg_t app_registry[] = {
-	{ "breathe", task_breathe_led, 1, 0, "Hardware PWM breathing LED on GPIO 25" },
-	{ "display", task_display,     0, 0, "Interactive counter display (Ctrl+C to stop)" },
-	{ "hello",   task_hello,       0, 1, "One-shot Hello World task (runs once and exits)" },
+	{ "breathe", task_breathe_led, 1, "Hardware PWM breathing LED on GPIO 25" },
+	{ "display", task_display,     0, "Interactive counter display (Ctrl+C to stop)" },
+	{ "hello",   task_hello,       0, "One-shot Hello World task (runs once and exits)" },
 };
 #define NUM_APPS  (sizeof(app_registry) / sizeof(app_registry[0]))
 
@@ -180,11 +180,7 @@ static void cmd_run(const char *arg)
 		foreground_pid = (uint32_t)pid;
 		console_puts("[RUN] Running '");
 		console_puts(app->name);
-		if (app->is_oneshot) {
-			console_puts("'...\r\n");
-		} else {
-			console_puts("' in foreground. Press Ctrl+C to stop...\r\n");
-		}
+		console_puts("' in foreground. Press Ctrl+C to stop...\r\n");
 	}
 }
 

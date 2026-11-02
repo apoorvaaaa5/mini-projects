@@ -1,20 +1,10 @@
 #include <scheduler.h>
-#include <mmio.h>
 #include <usb_cdc.h>
 #include <arch.h>
 #include <string.h>
 
-/* ARM Cortex-M0+ SysTick Hardware Registers (Private Peripheral Bus) */
-#define SYST_CSR            0xE000E010  /* Control and Status Register */
-#define SYST_RVR            0xE000E014  /* Reload Value Register */
-#define SYST_CVR            0xE000E018  /* Current Value Register */
-
-#define SYST_CSR_ENABLE     (1 << 0)    /* Counter Enable */
-#define SYST_CSR_TICKINT    (1 << 1)    /* SysTick Exception Request Enable */
-#define SYST_CSR_CLKSOURCE  (1 << 2)    /* 1 = clk_sys (125 MHz), 0 = 1 MHz ref */
-
 /* Variables from user template */
-uint8_t R = 0, currentTaskId = 0, nextTaskId = 0, num_tasks = 0;
+uint8_t currentTaskId = 0, nextTaskId = 0, num_tasks = 0;
 tcb task[MAX_TASKS];
 
 /* Internal static stack pool managed completely by scheduler */
@@ -30,7 +20,7 @@ static void task_exit_guard(void)
 	/* Auto-reap task when its function finishes and returns */
 	task_kill(currentTaskId);
 	while (1) {
-		asm volatile("wfi");
+		arch_wfi();
 	}
 }
 
@@ -98,7 +88,6 @@ int task_create_named(const char *name, void (*entry)(void), task_mode_t mode)
 	task[id].slot_id = id;
 	task[id].pid = assigned_pid;
 	task[id].fnctpt = entry;
-	task[id].priority = 0;
 	task[id].mode = mode;
 
 	if (name) {
@@ -126,11 +115,6 @@ int task_create_named(const char *name, void (*entry)(void), task_mode_t mode)
 	arch_ei();
 
 	return (int)assigned_pid;
-}
-
-int task_create(void (*entry)(void))
-{
-	return task_create_named("task", entry, MODE_BACKGROUND);
 }
 
 tcb *task_get_by_pid(uint32_t pid)
@@ -163,38 +147,6 @@ int task_kill(uint8_t slot_id)
 	arch_ei();
 
 	return 0;
-}
-
-int task_kill_by_name(const char *name)
-{
-	if (!name || strcmp(name, "shell") == 0) {
-		return -1;
-	}
-	for (int i = 1; i < MAX_TASKS; i++) {
-		if (strcmp(task[i].name, name) == 0 && task[i].state != t_quit) {
-			return task_kill(i);
-		}
-	}
-	return -1;
-}
-
-void timer_init(void)
-{
-	/* Disable SysTick during configuration */
-	mmio32(SYST_CSR) = 0;
-
-	/* Set reload value for 1 ms tick using 1 MHz reference clock:
-	 * 1 MHz clock -> 1,000 cycles per ms.
-	 * Reload register takes N - 1 = 999.
-	 */
-	mmio32(SYST_RVR) = 999;
-
-	/* Clear current counter */
-	mmio32(SYST_CVR) = 0;
-
-	/* Enable counter and interrupt using 1 MHz reference clock (CLKSOURCE = 0) */
-	//// Set this to 1mhz clock.
-	mmio32(SYST_CSR) = SYST_CSR_ENABLE | SYST_CSR_TICKINT;
 }
 
 void scheduler_start(void)
