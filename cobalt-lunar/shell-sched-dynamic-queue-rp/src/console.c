@@ -100,4 +100,37 @@ int console_is_locked(void)
 	return tx_lock;
 }
 
+void console_print_dec(uint32_t val)
+{
+	char buf[12];
+	int i = 0;
+	if (val == 0) {
+		console_putc('0');
+		return;
+	}
+	while (val > 0) {
+		buf[i++] = '0' + (val % 10);
+		val /= 10;
+	}
+	while (i > 0) {
+		console_putc(buf[--i]);
+	}
+}
+
+void console_print_hex(uint32_t val)
+{
+	static const char hex[] = "0123456789ABCDEF";
+	console_puts("0x");
+	for (int i = 7; i >= 0; i--) {
+		console_putc(hex[(val >> (i * 4)) & 0xF]);
+	}
+}
+
+void console_print_byte_hex(uint8_t b)
+{
+	static const char hex[] = "0123456789ABCDEF";
+	console_putc(hex[(b >> 4) & 0xF]);
+	console_putc(hex[b & 0xF]);
+}
+
 

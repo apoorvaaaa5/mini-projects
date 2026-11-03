@@ -15,10 +15,10 @@ extern char display_get_spinner(void);
 
 /* Application Registry Table */
 static const app_reg_t app_registry[] = {
-	{ "breathe",  task_breathe_led, 1, "Hardware PWM breathing LED on GPIO 25" },
-	{ "display",  task_display,     0, "Interactive counter display (Ctrl+C to stop)" },
-	{ "hello",    task_hello,       0, "One-shot Hello World task (runs once and exits)" },
-	{ "coremark", task_coremark,    0, "EEMBC CoreMark 1.0 benchmark (2000 iters)" },
+	{ "breathe",  task_breathe_led, true,  "Hardware PWM breathing LED on GPIO 25" },
+	{ "display",  task_display,     false, "Interactive counter display (Ctrl+C to stop)" },
+	{ "hello",    task_hello,       false, "One-shot Hello World task (runs once and exits)" },
+	{ "coremark", task_coremark,    false, "EEMBC CoreMark 1.0 benchmark (2000 iters)" },
 };
 #define NUM_APPS  (sizeof(app_registry) / sizeof(app_registry[0]))
 
@@ -35,18 +35,23 @@ static volatile uint8_t bg_telemetry_rendered = 0;
 
 static void print_uint(uint32_t val);
 
-static int is_task_bg_running(const char *name)
+bool shell_is_foreground(void)
+{
+	return (foreground_pid != 0 && current_task != NULL && current_task->pid == foreground_pid);
+}
+
+static bool is_task_bg_running(const char *name)
 {
 	tcb *head = task_get_queue_head();
-	if (!head) return 0;
+	if (head == NULL) return false;
 	tcb *curr = head;
 	do {
-		if (strcmp(curr->name, name) == 0 && curr->mode == MODE_BACKGROUND && curr->state != t_quit) {
-			return 1;
+		if (strcmp(curr->name, name) == 0 && curr->pid != foreground_pid && curr->state != t_quit) {
+			return true;
 		}
 		curr = curr->next;
-	} while (curr != head);
-	return 0;
+	} while (curr != head && curr != NULL);
+	return false;
 }
 
 void shell_prompt(void)
@@ -142,20 +147,16 @@ static const char *state_to_str(status s)
 	switch (s) {
 	case t_ready: return "READY  ";
 	case t_busy:  return "RUNNING";
-	case t_wait:  return "WAITING";
 	case t_quit:  return "QUIT   ";
 	default:      return "UNKNOWN";
 	}
 }
 
-static const char *mode_to_str(task_mode_t m)
+static const char *get_task_mode_str(uint32_t pid)
 {
-	switch (m) {
-	case MODE_SYSTEM:     return "SYSTEM    ";
-	case MODE_FOREGROUND: return "FOREGROUND";
-	case MODE_BACKGROUND: return "BACKGROUND";
-	default:              return "UNKNOWN   ";
-	}
+	if (pid == 0) return "SYSTEM    ";
+	if (pid == foreground_pid) return "FOREGROUND";
+	return "BACKGROUND";
 }
 
 static void cmd_help(void)
@@ -166,6 +167,9 @@ static void cmd_help(void)
 	console_puts("  run <app> [&]- Dynamically spawn app on heap (& forces background execution)\r\n");
 	console_puts("  ps          - Traverse dynamic task queue, stack frames & heap memory\r\n");
 	console_puts("  kill <id|app>- Terminate task by PID or Name, or 'kill all'\r\n");
+	console_puts("  heap        - Display dynamic heap allocation statistics\r\n");
+	console_puts("  heap audit  - Full physical block audit and memory payload dump\r\n");
+	console_puts("  clear       - Clear terminal screen\r\n");
 }
 
 static void cmd_ls(void)
@@ -250,12 +254,11 @@ static void cmd_run(const char *arg)
 		} while (curr != head);
 	}
 
-	int is_bg = app->bg || force_bg;
-	task_mode_t mode = is_bg ? MODE_BACKGROUND : MODE_FOREGROUND;
+	bool is_bg = app->bg || force_bg;
 
-	/* Dynamically allocate TCB and Stack on the Heap! (2048 B for CoreMark, 1024 B default) */
-	uint32_t stack_sz = (strcmp(app->name, "coremark") == 0) ? 2048 : DEFAULT_STACK_SIZE_BYTES;
-	int pid = task_create_dynamic(app->name, app->entry, mode, stack_sz);
+	/* Dynamically allocate TCB and Stack on the Heap! (3072 B (3 KB) for CoreMark, 1024 B default) */
+	uint32_t stack_sz = (strcmp(app->name, "coremark") == 0) ? (3 * 1024) : DEFAULT_STACK_SIZE_BYTES;
+	int pid = task_create_dynamic(app->name, app->entry, stack_sz);
 	if (pid < 0) {
 		console_puts("[ERROR] Failed to spawn: Heap exhausted! Free heap: ");
 		print_uint((uint32_t)heap_get_free_bytes());
@@ -282,11 +285,11 @@ static void cmd_run(const char *arg)
 
 static void cmd_ps(void)
 {
-	console_puts("PID     NAME       STATE    MODE        STACK_SP    STACK_SZ  TELEMETRY\r\n");
+	console_puts("PID     NAME       STATE    MODE        STACK_SP    TELEMETRY\r\n");
 	console_puts("--------------------------------------------------------------------------------\r\n");
 
 	tcb *head = task_get_queue_head();
-	if (head) {
+	if (head != NULL) {
 		tcb *curr = head;
 		do {
 			if (curr->state != t_quit) {
@@ -304,12 +307,10 @@ static void cmd_ps(void)
 
 				console_puts(state_to_str(curr->state));
 				console_puts("  ");
-				console_puts(mode_to_str(curr->mode));
+				console_puts(get_task_mode_str(curr->pid));
 				console_puts("  ");
 				print_hex(curr->stack_pointer_end);
 				console_puts("  ");
-				print_uint(curr->stack_size_bytes);
-				console_puts(" B     ");
 
 				if (strcmp(curr->name, "shell") == 0) {
 					console_puts("Active Shell (Queue Head)");
@@ -323,11 +324,13 @@ static void cmd_ps(void)
 					console_puts("]");
 				} else if (strcmp(curr->name, "hello") == 0) {
 					console_puts("One-Shot Done");
+				} else if (strcmp(curr->name, "coremark") == 0) {
+					console_puts("CoreMark Benchmark");
 				}
 				console_puts("\r\n");
 			}
 			curr = curr->next;
-		} while (curr != head);
+		} while (curr != head && curr != NULL);
 	}
 	console_puts("--------------------------------------------------------------------------------\r\n");
 	console_puts("Heap Status: ");
@@ -356,7 +359,7 @@ static int kill_single_task(const char *arg)
 		}
 	}
 
-	tcb *target = (tcb *)0;
+	tcb *target = NULL;
 	tcb *head = task_get_queue_head();
 	if (head) {
 		tcb *curr = head;
@@ -441,6 +444,46 @@ static void cmd_kill(const char *arg)
 	kill_single_task(arg);
 }
 
+static void cmd_heap(const char *arg)
+{
+	while (*arg == ' ' || *arg == '\t') arg++;
+	if (strcmp(arg, "audit") == 0 || strcmp(arg, "dump") == 0) {
+		heap_audit();
+		return;
+	}
+
+	heap_stats_t st;
+	heap_get_stats(&st);
+
+	console_puts("DYNAMIC HEAP STATISTICS:\r\n");
+	console_puts("--------------------------------------------------\r\n");
+	console_puts("Total Pool Size   : ");
+	console_print_dec((uint32_t)st.total_bytes);
+	console_puts(" bytes (16.0 KB)\r\n");
+
+	console_puts("Free Space        : ");
+	console_print_dec((uint32_t)st.free_bytes);
+	console_puts(" bytes\r\n");
+
+	console_puts("Used Space        : ");
+	console_print_dec((uint32_t)st.used_bytes);
+	console_puts(" bytes\r\n");
+
+	console_puts("Total Blocks      : ");
+	console_print_dec((uint32_t)st.total_blocks);
+	console_puts(" (Active: ");
+	console_print_dec((uint32_t)st.used_blocks);
+	console_puts(", Free: ");
+	console_print_dec((uint32_t)st.free_blocks);
+	console_puts(")\r\n");
+
+	console_puts("Largest Free Block: ");
+	console_print_dec((uint32_t)st.largest_free_block);
+	console_puts(" bytes\r\n");
+	console_puts("--------------------------------------------------\r\n");
+	console_puts("Tip: Use 'heap audit' to dump block chains and payload bytes.\r\n");
+}
+
 static void execute_command(char *cmd_line)
 {
 	while (*cmd_line == ' ' || *cmd_line == '\t') cmd_line++;
@@ -466,6 +509,8 @@ static void execute_command(char *cmd_line)
 		cmd_ps();
 	} else if (strcmp(cmd_line, "kill") == 0) {
 		cmd_kill(arg);
+	} else if (strcmp(cmd_line, "heap") == 0) {
+		cmd_heap(arg);
 	} else if (strcmp(cmd_line, "clear") == 0) {
 		console_write("\033[2J\033[H", 7);
 	} else {
@@ -480,8 +525,6 @@ void shell_task(void)
 	int welcomed = 0;
 
 	while (1) {
-		task_reap_zombies();
-
 		if (!usb_cdc_is_connected()) {
 			welcomed = 0;
 			foreground_pid = 0;

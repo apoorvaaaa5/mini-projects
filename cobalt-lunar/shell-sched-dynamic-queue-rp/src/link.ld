@@ -64,6 +64,16 @@ SECTIONS
 
     _bss_size = SIZEOF(.bss);
 
+    /* 16 KB Dynamic Heap Pool as explicit (NOLOAD) section in sram */
+    .heap (NOLOAD) :
+    {
+        . = ALIGN(8);
+        __heap_start = .;
+        . = . + (16 * 1024);
+        . = ALIGN(8);
+        __heap_end = .;
+    } > sram
+
     .stack (NOLOAD) :
     {
         . = ALIGN(8);

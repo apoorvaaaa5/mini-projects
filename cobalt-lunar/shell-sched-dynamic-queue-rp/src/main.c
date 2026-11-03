@@ -55,7 +55,7 @@ void task_display(void)
 
 		if (!usb_cdc_is_connected()) continue;
 
-		if (current_task && current_task->mode == MODE_FOREGROUND) {
+		if (shell_is_foreground()) {
 			/* FOREGROUND: Stream directly to current terminal line */
 			console_puts("\r[DISPLAY] Hello from display task! [");
 			console_putc(display_spinner_char);
@@ -73,7 +73,7 @@ void task_display(void)
 				console_putc(buf[--i]);
 			}
 			console_puts("   ");
-		} else if (current_task && current_task->mode == MODE_BACKGROUND) {
+		} else {
 			/* BACKGROUND: Update in-line relative telemetry above shell prompt */
 			shell_update_bg_telemetry(display_spinner_char, count);
 		}
@@ -89,7 +89,7 @@ void task_hello(void)
 {
 	if (!usb_cdc_is_connected()) return;
 
-	if (current_task && current_task->mode == MODE_FOREGROUND) {
+	if (shell_is_foreground()) {
 		/* Foreground: Standard output */
 		console_puts("Hello World!\r\n");
 	} else {
@@ -116,7 +116,7 @@ int main(void)
 	systick_init();
 
 	/* 5. Dynamically allocate and spawn primary interactive Shell Task (PID 0) */
-	task_create_named("shell", shell_task, MODE_SYSTEM);
+	task_create_named("shell", shell_task);
 
 	/* 6. Start the round-robin multitasking engine */
 	scheduler_start();
