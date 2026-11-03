@@ -43,6 +43,7 @@ uint32_t task_get_count(void);
 void scheduler_start(void);
 void start_first_task(uint32_t stack_top, void (*entry)(void));
 uint32_t schedule_next(uint32_t current_sp);
+void task_yield(void);
 void mdelay(uint32_t ms);
 
 #endif /* SCHEDULER_H */

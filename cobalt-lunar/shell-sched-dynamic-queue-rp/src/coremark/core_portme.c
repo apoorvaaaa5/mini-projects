@@ -22,7 +22,9 @@ volatile ee_s32 seed3_volatile = 0x8;
 volatile ee_s32 seed4_volatile = ITERATIONS;
 volatile ee_s32 seed5_volatile = 0;
 
-/* Timing functions hooked to OS SysTick 1 ms periodic counter */
+/*
+ * Timing functions: Hooked exclusively to the ARM Cortex-M0+ SysTick 1 ms timer.
+ */
 extern volatile uint32_t system_millis;
 
 CORETIMETYPE barebones_clock(void)
@@ -90,25 +92,4 @@ void *portable_malloc(ee_size_t size)
 void portable_free(void *p)
 {
     free(p);
-}
-
-/* External CoreMark main entry */
-extern int coremark_main(void);
-
-/*
- * StrataHalo OS Task Entry Wrapper:
- * Spawns the CoreMark suite as a fully schedulable dynamic task.
- */
-void task_coremark(void)
-{
-    console_puts("\r\n=======================================================\r\n");
-    console_puts("   EEMBC CoreMark 1.0 Benchmark (StrataHalo OS)        \r\n");
-    console_puts("   Target: RP2040 Cortex-M0+ @ 125 MHz                 \r\n");
-    console_puts("   Workload: 2,000 Iterations (Floating Point Enabled) \r\n");
-    console_puts("   Allocating 2000-byte data block from Dynamic Heap   \r\n");
-    console_puts("=======================================================\r\n\r\n");
-
-    coremark_main();
-
-    console_puts("\r\n[OK] CoreMark Benchmark run completed successfully.\r\n");
 }

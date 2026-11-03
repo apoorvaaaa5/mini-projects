@@ -5,13 +5,7 @@
 #include <usb_cdc.h>
 #include <string.h>
 #include <pwm.h>
-
-extern void task_breathe_led(void);
-extern void task_display(void);
-extern void task_hello(void);
-extern void task_coremark(void);
-extern uint32_t display_get_tick(void);
-extern char display_get_spinner(void);
+#include <task.h>
 
 /* Application Registry Table */
 static const app_reg_t app_registry[] = {
@@ -554,7 +548,11 @@ void shell_task(void)
 		/* Non-blocking read */
 		int ch = console_getc();
 		if (ch < 0) {
-			mdelay(10);
+			if (current_task != NULL && task_get_count() > 1) {
+				task_yield();
+			} else {
+				mdelay(10);
+			}
 			continue;
 		}
 
@@ -590,8 +588,11 @@ void shell_task(void)
 			continue;
 		}
 
-		/* If a foreground task is actively running, ignore normal shell typing */
+		/* If a foreground task is actively running, ignore normal shell typing and yield */
 		if (foreground_pid > 0) {
+			if (current_task != NULL && task_get_count() > 1) {
+				task_yield();
+			}
 			continue;
 		}
 

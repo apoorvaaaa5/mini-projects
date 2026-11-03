@@ -5,6 +5,38 @@
 .global systick_isr
 .type systick_isr, %function
 systick_isr:
+    /* -------------------------------------------------------------
+     * SysTick Periodic Timer Interrupt (1 kHz / 1 ms tick):
+     * Always increments system_millis.
+     * ------------------------------------------------------------- */
+    ldr     r0, =system_millis
+    ldr     r1, [r0]
+    adds    r1, #1
+    str     r1, [r0]
+
+    /* Check EXC_RETURN in LR: bit 2 indicates MSP (0 = bare-metal) vs PSP (1 = OS task) */
+    mov     r0, lr
+    movs    r1, #4
+    tst     r0, r1
+    beq     .Lsystick_done
+
+    /* Running on PSP (OS mode): Trigger PendSV for round-robin preemption */
+    ldr     r0, =0xE000ED04    /* ICSR (Interrupt Control and State Register) */
+    ldr     r1, =(1 << 28)     /* PENDSVSET */
+    str     r1, [r0]
+
+.Lsystick_done:
+    bx      lr
+
+.global pendsv_isr
+.type pendsv_isr, %function
+pendsv_isr:
+    /* -------------------------------------------------------------
+     * PendSV Exception: Performs Context Switching
+     * Triggered by:
+     *   1) systick_isr (preemptive round-robin time slice expiration)
+     *   2) task_yield() (cooperative voluntary slice release)
+     * ------------------------------------------------------------- */
     /* 1. Read current task's Process Stack Pointer (PSP) */
     mrs     r0, psp
 
@@ -20,10 +52,11 @@ systick_isr:
 
     /* 3. Call C schedule_next(current_sp in r0)
      *    Returns next task's stack_pointer_end directly in r0!
+     *    push {r3, lr} ensures 8-byte stack alignment on MSP for AAPCS.
      */
-    push    {lr}
+    push    {r3, lr}
     bl      schedule_next
-    pop     {r3}            /* r3 = EXC_RETURN */
+    pop     {r2, r3}
 
     /* 4. Restore R8-R11 from next task's stack (pointed to by r0) */
     mov     r1, r0

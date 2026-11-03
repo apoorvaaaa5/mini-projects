@@ -15,7 +15,7 @@ vectors:
     .word panic_handler         /* 11: SVCall */
     .word panic_handler         /* 12: Reserved */
     .word panic_handler         /* 13: Reserved */
-    .word panic_handler         /* 14: PendSV */
+    .word pendsv_isr            /* 14: PendSV Exception Handler */
     .word systick_isr           /* 15: SysTick Exception Handler */
     .rept 32
         .word panic_handler     /* 16-47: External Peripheral IRQs */

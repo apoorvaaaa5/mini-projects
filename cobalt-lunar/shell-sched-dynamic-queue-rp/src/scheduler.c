@@ -267,12 +267,10 @@ void scheduler_start(void)
 
 /*
  * O(1) Constant-Time Round-Robin Scheduler
- * Invoked by systick_isr in context_switch.S every 1 millisecond.
+ * Invoked by pendsv_isr in context_switch.S upon SysTick quantum or task_yield().
  */
 uint32_t schedule_next(uint32_t current_sp)
 {
-	system_millis++;
-
 	if (current_task == NULL) return current_sp;
 
 	/* 1. Save Stack Pointer of preempted task */
@@ -307,10 +305,22 @@ uint32_t schedule_next(uint32_t current_sp)
 	return current_sp;
 }
 
+void task_yield(void)
+{
+	if (current_task != NULL && active_task_count > 1) {
+		/* Trigger PendSV context switch (bit 28 in ICSR 0xE000ED04) */
+		*(volatile uint32_t *)0xE000ED04 = (1UL << 28);
+		__asm volatile ("isb" : : : "memory");
+	}
+}
+
 void mdelay(uint32_t ms)
 {
 	uint32_t start = system_millis;
 	while ((system_millis - start) < ms) {
 		usb_poll();
+		if (current_task != NULL && active_task_count > 1) {
+			task_yield();
+		}
 	}
 }
