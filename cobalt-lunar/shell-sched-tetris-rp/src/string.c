@@ -19,6 +19,45 @@ void *memcpy(void *dest, const void *src, unsigned int n)
 	return dest;
 }
 
+void *memmove(void *dest, const void *src, unsigned int n)
+{
+	unsigned char *d = (unsigned char *)dest;
+	const unsigned char *s = (const unsigned char *)src;
+	if (d < s) {
+		while (n--) *d++ = *s++;
+	} else if (d > s) {
+		d += n;
+		s += n;
+		while (n--) *--d = *--s;
+	}
+	return dest;
+}
+
+char *strcpy(char *dest, const char *src)
+{
+	char *d = dest;
+	while ((*d++ = *src++));
+	return dest;
+}
+
+char *strcat(char *dest, const char *src)
+{
+	char *d = dest;
+	while (*d) d++;
+	while ((*d++ = *src++));
+	return dest;
+}
+
+char *strchr(const char *s, int c)
+{
+	while (*s) {
+		if (*s == (char)c) return (char *)s;
+		s++;
+	}
+	if ((char)c == '\0') return (char *)s;
+	return 0;
+}
+
 unsigned int strlen(const char *s)
 {
 	unsigned int len = 0;

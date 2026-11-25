@@ -5,6 +5,10 @@
 
 void *memset(void *dest, int c, unsigned int n);
 void *memcpy(void *dest, const void *src, unsigned int n);
+void *memmove(void *dest, const void *src, unsigned int n);
+char *strcpy(char *dest, const char *src);
+char *strcat(char *dest, const char *src);
+char *strchr(const char *s, int c);
 unsigned int strlen(const char *s);
 int strcmp(const char *s1, const char *s2);
 int strncmp(const char *s1, const char *s2, unsigned int n);

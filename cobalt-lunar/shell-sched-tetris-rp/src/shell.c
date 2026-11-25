@@ -49,10 +49,248 @@ int fg_key_get(void)
 /* Active shell input line buffer and telemetry tracking */
 static char shell_line[SHELL_MAX_LINE];
 static uint32_t shell_len = 0;
+static uint32_t cursor_idx = 0;
 static volatile uint8_t shell_executing = 0;
 static volatile uint8_t bg_telemetry_rendered = 0;
 
+/* Command History Ring Buffer (16 previous commands) */
+#define SHELL_HISTORY_MAX 16
+static char shell_history[SHELL_HISTORY_MAX][SHELL_MAX_LINE];
+static uint8_t history_count = 0;
+static uint8_t history_head = 0;
+static int8_t  history_nav_idx = -1;
+static char    saved_line_buf[SHELL_MAX_LINE];
+
+/* Registered Shell Commands for Tab Auto-Completion */
+static const char *const shell_commands[] = {
+	"help",
+	"ls",
+	"run",
+	"fg",
+	"ps",
+	"kill",
+	"heap",
+	"clear",
+	"history"
+};
+#define NUM_COMMANDS (sizeof(shell_commands) / sizeof(shell_commands[0]))
+
 static void print_uint(uint32_t val);
+
+/* Replace current terminal line on screen and update line buffer */
+static void shell_replace_line(const char *new_str)
+{
+	/* Move cursor to end of current line if needed */
+	while (cursor_idx < shell_len) {
+		console_puts("\033[C");
+		cursor_idx++;
+	}
+	/* Erase line backwards */
+	while (shell_len > 0) {
+		console_puts("\b \b");
+		shell_len--;
+	}
+	cursor_idx = 0;
+
+	/* Copy new string into line buffer */
+	uint32_t len = strlen(new_str);
+	if (len >= SHELL_MAX_LINE) len = SHELL_MAX_LINE - 1;
+	memcpy(shell_line, new_str, len);
+	shell_line[len] = '\0';
+	shell_len = len;
+	cursor_idx = len;
+	console_puts(shell_line);
+}
+
+/* Save a command line into the history ring buffer */
+static void history_add(const char *cmd)
+{
+	while (*cmd == ' ' || *cmd == '\t') cmd++;
+	if (*cmd == '\0') return;
+
+	/* Suppress consecutive duplicates */
+	if (history_count > 0) {
+		uint8_t last = (history_head - 1 + SHELL_HISTORY_MAX) % SHELL_HISTORY_MAX;
+		if (strcmp(shell_history[last], cmd) == 0) {
+			history_nav_idx = -1;
+			return;
+		}
+	}
+
+	strncpy(shell_history[history_head], cmd, SHELL_MAX_LINE - 1);
+	shell_history[history_head][SHELL_MAX_LINE - 1] = '\0';
+	history_head = (history_head + 1) % SHELL_HISTORY_MAX;
+	if (history_count < SHELL_HISTORY_MAX) {
+		history_count++;
+	}
+	history_nav_idx = -1;
+}
+
+/* Cycle backwards to older commands */
+static void handle_history_up(void)
+{
+	if (history_count == 0) return;
+
+	if (history_nav_idx == -1) {
+		/* Save user's in-progress typing buffer */
+		shell_line[shell_len] = '\0';
+		strncpy(saved_line_buf, shell_line, SHELL_MAX_LINE - 1);
+		saved_line_buf[SHELL_MAX_LINE - 1] = '\0';
+		history_nav_idx = 0;
+	} else if (history_nav_idx < (int8_t)(history_count - 1)) {
+		history_nav_idx++;
+	} else {
+		return; /* Already at oldest command */
+	}
+
+	uint8_t slot = (history_head - 1 - history_nav_idx + SHELL_HISTORY_MAX * 2) % SHELL_HISTORY_MAX;
+	shell_replace_line(shell_history[slot]);
+}
+
+/* Cycle forwards to newer commands */
+static void handle_history_down(void)
+{
+	if (history_nav_idx == -1) return;
+
+	if (history_nav_idx > 0) {
+		history_nav_idx--;
+		uint8_t slot = (history_head - 1 - history_nav_idx + SHELL_HISTORY_MAX * 2) % SHELL_HISTORY_MAX;
+		shell_replace_line(shell_history[slot]);
+	} else {
+		/* Reached newest entry: restore user's in-progress typing buffer */
+		history_nav_idx = -1;
+		shell_replace_line(saved_line_buf);
+	}
+}
+
+/* Print command history list */
+static void cmd_history(void)
+{
+	if (history_count == 0) {
+		console_puts("Command history is empty.\r\n");
+		return;
+	}
+	console_puts("COMMAND HISTORY:\r\n");
+	uint8_t start = (history_head - history_count + SHELL_HISTORY_MAX) % SHELL_HISTORY_MAX;
+	for (uint8_t i = 0; i < history_count; i++) {
+		uint8_t idx = (start + i) % SHELL_HISTORY_MAX;
+		console_puts("  ");
+		print_uint((uint32_t)(i + 1));
+		if ((i + 1) < 10) console_puts("   ");
+		else console_puts("  ");
+		console_puts(shell_history[idx]);
+		console_puts("\r\n");
+	}
+}
+
+/* Handle Tab Auto-Completion */
+static void handle_tab_completion(void)
+{
+	shell_line[shell_len] = '\0';
+
+	/* 1. Sub-command completion for 'run <app>' */
+	if (strncmp(shell_line, "run ", 4) == 0) {
+		const char *prefix = shell_line + 4;
+		while (*prefix == ' ') prefix++;
+		uint32_t prefix_len = strlen(prefix);
+
+		const char *matches[NUM_APPS];
+		uint32_t match_count = 0;
+		for (uint32_t i = 0; i < NUM_APPS; i++) {
+			if (strncmp(app_registry[i].name, prefix, prefix_len) == 0) {
+				matches[match_count++] = app_registry[i].name;
+			}
+		}
+
+		if (match_count == 1) {
+			char new_cmd[SHELL_MAX_LINE];
+			strcpy(new_cmd, "run ");
+			strcat(new_cmd, matches[0]);
+			strcat(new_cmd, " ");
+			shell_replace_line(new_cmd);
+		} else if (match_count > 1) {
+			console_puts("\r\n");
+			for (uint32_t i = 0; i < match_count; i++) {
+				console_puts("  ");
+				console_puts(matches[i]);
+			}
+			console_puts("\r\n");
+			shell_prompt();
+			console_puts(shell_line);
+		}
+		return;
+	}
+
+	/* 2. Sub-command completion for 'fg <app>' */
+	if (strncmp(shell_line, "fg ", 3) == 0) {
+		const char *prefix = shell_line + 3;
+		while (*prefix == ' ') prefix++;
+		uint32_t prefix_len = strlen(prefix);
+
+		const char *matches[NUM_APPS];
+		uint32_t match_count = 0;
+		for (uint32_t i = 0; i < NUM_APPS; i++) {
+			if (strncmp(app_registry[i].name, prefix, prefix_len) == 0) {
+				matches[match_count++] = app_registry[i].name;
+			}
+		}
+
+		if (match_count == 1) {
+			char new_cmd[SHELL_MAX_LINE];
+			strcpy(new_cmd, "fg ");
+			strcat(new_cmd, matches[0]);
+			strcat(new_cmd, " ");
+			shell_replace_line(new_cmd);
+		} else if (match_count > 1) {
+			console_puts("\r\n");
+			for (uint32_t i = 0; i < match_count; i++) {
+				console_puts("  ");
+				console_puts(matches[i]);
+			}
+			console_puts("\r\n");
+			shell_prompt();
+			console_puts(shell_line);
+		}
+		return;
+	}
+
+	/* 3. Sub-command completion for 'heap audit' */
+	if (strncmp(shell_line, "heap ", 5) == 0) {
+		const char *prefix = shell_line + 5;
+		while (*prefix == ' ') prefix++;
+		if (strncmp("audit", prefix, strlen(prefix)) == 0) {
+			shell_replace_line("heap audit");
+		}
+		return;
+	}
+
+	/* 4. Primary Command completion */
+	if (strchr(shell_line, ' ') == NULL) {
+		const char *matches[NUM_COMMANDS];
+		uint32_t match_count = 0;
+		for (uint32_t i = 0; i < NUM_COMMANDS; i++) {
+			if (strncmp(shell_commands[i], shell_line, shell_len) == 0) {
+				matches[match_count++] = shell_commands[i];
+			}
+		}
+
+		if (match_count == 1) {
+			char new_cmd[SHELL_MAX_LINE];
+			strcpy(new_cmd, matches[0]);
+			strcat(new_cmd, " ");
+			shell_replace_line(new_cmd);
+		} else if (match_count > 1) {
+			console_puts("\r\n");
+			for (uint32_t i = 0; i < match_count; i++) {
+				console_puts("  ");
+				console_puts(matches[i]);
+			}
+			console_puts("\r\n");
+			shell_prompt();
+			console_puts(shell_line);
+		}
+	}
+}
 
 bool shell_is_foreground(void)
 {
@@ -129,6 +367,9 @@ void shell_update_bg_telemetry(char spinner, uint32_t ticks)
 	for (uint32_t i = 0; i < shell_len; i++) {
 		console_putc(shell_line[i]);
 	}
+	for (uint32_t i = cursor_idx; i < shell_len; i++) {
+		console_puts("\033[D");
+	}
 
 	bg_telemetry_rendered = 1;
 
@@ -189,6 +430,7 @@ static void cmd_help(void)
 	console_puts("  kill <id|app>- Terminate task by PID or Name, or 'kill all'\r\n");
 	console_puts("  heap        - Display dynamic heap allocation statistics\r\n");
 	console_puts("  heap audit  - Full physical block audit and memory payload dump\r\n");
+	console_puts("  history     - Display command execution history\r\n");
 	console_puts("  clear       - Clear terminal screen\r\n");
 }
 
@@ -615,6 +857,8 @@ static void execute_command(char *cmd_line)
 		cmd_heap(arg);
 	} else if (strcmp(cmd_line, "clear") == 0) {
 		console_write("\033[2J\033[H", 7);
+	} else if (strcmp(cmd_line, "history") == 0) {
+		cmd_history();
 	} else {
 		console_puts("Unknown command: '");
 		console_puts(cmd_line);
@@ -640,6 +884,7 @@ void shell_task(void)
 			console_puts("\r\n>>> CONNECTED TO STRATAHALO OS (DYNAMIC QUEUE) <<<\r\n");
 			console_puts("Type 'help' or 'ls' to see applications.\r\n\r\n");
 			shell_len = 0;
+			cursor_idx = 0;
 			shell_prompt();
 		}
 
@@ -650,6 +895,7 @@ void shell_task(void)
 				foreground_pid = 0;
 				fg_key_head = fg_key_tail = 0;
 				shell_len = 0;
+				cursor_idx = 0;
 				console_puts("\033[?25h\033[0m"); /* Restore cursor and normal attributes */
 				shell_prompt();
 			}
@@ -690,10 +936,12 @@ void shell_task(void)
 				foreground_pid = 0;
 				fg_key_head = fg_key_tail = 0;
 				shell_len = 0;
+				cursor_idx = 0;
 				shell_prompt();
 			} else {
 				console_puts("^C\r\n");
 				shell_len = 0;
+				cursor_idx = 0;
 				shell_prompt();
 			}
 			continue;
@@ -717,6 +965,7 @@ void shell_task(void)
 				foreground_pid = 0;
 				fg_key_head = fg_key_tail = 0;
 				shell_len = 0;
+				cursor_idx = 0;
 				shell_prompt();
 			}
 			continue;
@@ -731,14 +980,19 @@ void shell_task(void)
 			continue;
 		}
 
-		/* Normal shell line editing */
+		/* Normal shell line editing with full ergonomics */
 		if (ch == '\r' || ch == '\n') {
 			console_lock();
 			console_puts("\r\n");
 			shell_line[shell_len] = '\0';
+			if (shell_len > 0) {
+				history_add(shell_line);
+			}
+			history_nav_idx = -1;
 			shell_executing = 1;
 			execute_command(shell_line);
 			shell_len = 0;
+			cursor_idx = 0;
 			shell_executing = 0;
 			if (foreground_pid == 0) {
 				shell_prompt();
@@ -746,18 +1000,112 @@ void shell_task(void)
 			console_unlock();
 		} else if (ch == '\b' || ch == 0x7F) {
 			/* Backspace */
-			if (shell_len > 0) {
+			if (cursor_idx > 0) {
 				console_lock();
-				shell_len--;
-				console_puts("\b \b");
+				if (cursor_idx == shell_len) {
+					cursor_idx--;
+					shell_len--;
+					shell_line[shell_len] = '\0';
+					console_puts("\b \b");
+				} else {
+					/* Middle-of-line backspace */
+					memmove(&shell_line[cursor_idx - 1], &shell_line[cursor_idx], shell_len - cursor_idx);
+					cursor_idx--;
+					shell_len--;
+					shell_line[shell_len] = '\0';
+					console_puts("\b");
+					console_puts(&shell_line[cursor_idx]);
+					console_putc(' ');
+					for (uint32_t i = 0; i <= (shell_len - cursor_idx); i++) {
+						console_puts("\033[D");
+					}
+				}
+				console_unlock();
+			}
+		} else if (ch == KEY_UP) {
+			console_lock();
+			handle_history_up();
+			console_unlock();
+		} else if (ch == KEY_DOWN) {
+			console_lock();
+			handle_history_down();
+			console_unlock();
+		} else if (ch == '\t') {
+			console_lock();
+			handle_tab_completion();
+			console_unlock();
+		} else if (ch == 0x0C) {
+			/* Ctrl+L: Clear screen, redraw prompt and current line buffer */
+			console_lock();
+			console_write("\033[2J\033[H", 7);
+			shell_prompt();
+			shell_line[shell_len] = '\0';
+			console_puts(shell_line);
+			if (cursor_idx < shell_len) {
+				for (uint32_t i = 0; i < (shell_len - cursor_idx); i++) {
+					console_puts("\033[D");
+				}
+			}
+			console_unlock();
+		} else if (ch == 0x15) {
+			/* Ctrl+U: Erase current line */
+			console_lock();
+			shell_replace_line("");
+			history_nav_idx = -1;
+			console_unlock();
+		} else if (ch == 0x01) {
+			/* Ctrl+A: Move cursor to beginning of line */
+			console_lock();
+			while (cursor_idx > 0) {
+				console_puts("\033[D");
+				cursor_idx--;
+			}
+			console_unlock();
+		} else if (ch == 0x05) {
+			/* Ctrl+E: Move cursor to end of line */
+			console_lock();
+			while (cursor_idx < shell_len) {
+				console_puts("\033[C");
+				cursor_idx++;
+			}
+			console_unlock();
+		} else if (ch == KEY_LEFT) {
+			/* Left arrow cursor movement */
+			if (cursor_idx > 0) {
+				console_lock();
+				console_puts("\033[D");
+				cursor_idx--;
+				console_unlock();
+			}
+		} else if (ch == KEY_RIGHT) {
+			/* Right arrow cursor movement */
+			if (cursor_idx < shell_len) {
+				console_lock();
+				console_puts("\033[C");
+				cursor_idx++;
 				console_unlock();
 			}
 		} else if (ch >= 32 && ch <= 126) {
 			/* Printable character */
 			if (shell_len < SHELL_MAX_LINE - 1) {
 				console_lock();
-				shell_line[shell_len++] = (char)ch;
-				console_putc((char)ch);
+				if (cursor_idx == shell_len) {
+					shell_line[shell_len++] = (char)ch;
+					cursor_idx++;
+					shell_line[shell_len] = '\0';
+					console_putc((char)ch);
+				} else {
+					/* Middle-of-line insertion */
+					memmove(&shell_line[cursor_idx + 1], &shell_line[cursor_idx], shell_len - cursor_idx);
+					shell_line[cursor_idx] = (char)ch;
+					shell_len++;
+					cursor_idx++;
+					shell_line[shell_len] = '\0';
+					console_puts(&shell_line[cursor_idx - 1]);
+					for (uint32_t i = 0; i < (shell_len - cursor_idx); i++) {
+						console_puts("\033[D");
+					}
+				}
 				console_unlock();
 			}
 		}
